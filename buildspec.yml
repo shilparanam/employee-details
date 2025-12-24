@@ -1,0 +1,61 @@
+version: 0.2
+
+env:
+  variables:
+    APP_NAME: "employeedetails"
+    IMAGE_TAG: "latest"
+  secrets-manager:
+    DOCKER_USERNAME: "docker/username"
+    DOCKER_PASSWORD: "docker/password"
+    DOCKER_REGISTRY: "docker/registry"
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - echo "Installing Zulu JDK 17"
+      - wget https://cdn.azul.com/zulu/bin/zulu17.50.19-ca-jdk17.0.11-linux_x64.tar.gz
+      - tar -xvf zulu17*.tar.gz
+      - export JAVA_HOME=$(pwd)/zulu17*/
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - java -version
+
+      - echo "Installing Maven"
+      - yum install -y maven
+
+      - echo "Installing Trivy"
+      - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - echo "Installing OWASP Dependency Check"
+      - wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.3/dependency-check-10.0.3-release.zip
+      - unzip dependency-check-10.0.3-release.zip
+      - export PATH=$(pwd)/dependency-check/bin:$PATH
+
+  pre_build:
+    commands:
+      - echo "Logging into Docker registry"
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY"
+
+  build:
+    commands:
+      - echo "Running Maven build"
+      - mvn clean package -DskipTests=false
+
+      - echo "Running OWASP Dependency Check"
+      - dependency-check.sh --project "$APP_NAME" --scan . --format HTML --out ./dc-report --failOnCVSS 7 || true
+
+      - echo "Building Docker image"
+      - docker build -t $DOCKER_REGISTRY/$APP_NAME:$IMAGE_TAG .
+
+      - echo "Running Trivy scan"
+      - trivy image --severity HIGH,CRITICAL $DOCKER_REGISTRY/$APP_NAME:$IMAGE_TAG || true
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image"
+      - docker push $DOCKER_REGISTRY/$APP_NAME:$IMAGE_TAG
+
+artifacts:
+  files:
+    - dc-report/dependency-check-report.html
