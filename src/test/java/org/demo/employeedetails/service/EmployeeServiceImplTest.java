@@ -12,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -75,4 +74,3 @@ public class EmployeeServiceImplTest {
                 .hasMessageContaining("firstName must be at most");
     }
 }
-

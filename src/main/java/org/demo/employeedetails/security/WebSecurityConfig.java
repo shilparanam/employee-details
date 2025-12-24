@@ -56,6 +56,9 @@ public class WebSecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .requiresChannel(channel -> channel
+                        .anyRequest().requiresSecure()
+                )
                 .httpBasic(Customizer.withDefaults());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

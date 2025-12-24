@@ -47,8 +47,8 @@ trivy image --severity HIGH,CRITICAL ${APP_NAME}:${IMAGE_TAG} || true
 echo "----------------------------------------"
 echo " Step 6: Run Docker Container"
 echo "----------------------------------------"
-docker run -d -p 8080:8080 --name ${APP_NAME}_container ${APP_NAME}:${IMAGE_TAG}
+docker run -d -p 8443:8443 --name ${APP_NAME}_container ${APP_NAME}:${IMAGE_TAG}
 
 echo "----------------------------------------"
-echo " Application is running at http://localhost:8080"
+echo " Application is running at https://localhost:8443"
 echo "----------------------------------------"
